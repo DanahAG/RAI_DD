@@ -1,0 +1,201 @@
+import pandas as pd
+
+import numpy as np
+
+import sklearn.metrics as metrics
+
+from sklearn.metrics import classification_report
+
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(r'C:\..data\Dataset.csv')
+
+	Pcount= df.groupby([' ItemID '])[' Puarshases '].count()
+  
+a=df.groupby(['NoCate'])['ItemID'].min()
+
+
+
+class SAMME:
+
+    def __initial__(x,dataset,train,test):
+    
+        x.dataset = dataset
+        
+        x.train = train
+        
+        x.test = test
+        
+        x.baseLearneralphas = None
+        
+        x.baseLearnermodels = None
+        
+        x.acc = []
+        
+        x.prediction = None
+    
+    def fit(x):
+        
+        X = x.dataset.drop(['actual'],axis=1)
+        
+        Y = x.dataset['actual'].where(x.dataset['actual']==1,-1)
+
+        # The weights of instances
+
+        W = pd.DataFrame(Y.copy())
+        
+        W['weight'] = 1/len(x.dataset) 
+        
+
+
+
+        # Start boosting the base learner
+
+
+        
+        baseLearneralphas = []
+        
+        baseLearnermodels = []
+        
+        for t in range(x.train):
+
+            # Train the Base learner
+            
+            Tree_model = DecisionTreeClassifier(criterion="entropy",max_depth=1)
+            
+# Base learner is a decision stump which has a one depth
+            
+            
+
+
+
+
+
+
+            model = Tree_model.fit(X,Y,instance_weight=np.array(W['weight'])) 
+            
+
+
+            baseLearnermodels.append(model)
+            
+            Modelprediction = model.predict(X)
+            
+            Modelscore = model.score(X,Y)
+
+            
+
+            W['Modelprediction'] = Modelprediction
+            
+            W['W'] = np.where(W['Modelprediction'] == W['actual'],1,0)
+            
+            W['misclassifiedInstance'] = np.where(W['Modelprediction'] != W['actual'],1,0)
+
+
+
+            # The Rate  of Misclassification
+            
+            acc = sum(W['W'])/len(W['weight'])
+            
+            misclassification = sum(W['misclassifiedInstance'])/len(W['misclassifiedInstance'])
+
+
+
+
+
+
+            # The error rate
+            
+            error = np.sum(W['weight']*W['misclassifiedInstance'])/np.sum(W['weights'])
+ 
+   
+
+
+
+
+            # The alpha of base learner
+            
+            BLalpha = np.log((1-error)/error)
+            
+            baseLearneralphas.append(BLalpha)
+
+
+
+
+
+
+            # The Instanceweights updating for the next base learner training
+
+
+
+
+
+
+            W['weights'] *= np.exp(BLalpha*W['misclassifiedInstance'])
+
+            #print('model accuracy of the {0}. model is : '.format(t+1),acc*100,'%')
+            
+            #print('Rate of misclassified instances: ',misclassificationrate*100,'%')
+        
+        x.baseLearneralphas = baseLearneralphas
+        
+        x.baseLearnermodels = baseLearnermodels
+            
+    def predict(x):
+    
+        X_test = x.test.drop(['actual'],axis=1).reindex(range(len(x.test)))
+        
+        Y_test = x.test['actual'].reindex(range(len(x.test))).where(x.dataset['actual']==1,-1)
+
+
+    
+        # Each base learner in the x.model list, predict
+        
+        acc = []
+        
+        Modelprediction = []
+        
+        for alpha , model in f(x.baseLearneralphas,x.baseLearnermodels):
+        
+            prediction = alpha*model.predict(X_test) 
+
+            x.acc.append(np.sum(np.sign(np.sum(np.array(Modelprediction),axis=0))==Y_test.values)/len(Modelprediction[0]))
+            
+
+
+        x.Modelprediction = np.sign(np.sum(np.array(Modelprediction),axis=0))
+
+   
+        x.to_csv(r'C:\..model.csv')
+
+        
+
+
+
+pd.read_csv(r'C:\..model.csv')
+
+print(classification_report(test_df['risks'], test_df['actual'], target_names=['0', '1']))
+
+
+fpr, tpr, threshold = metrics.roc_curve(test_df['risk'], test_df['actual'])
+
+roc_auc = metrics.auc(fpr, tpr)
+
+
+plt.title('Receiver Operating Characteristic')
+
+plt.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc)
+
+plt.legend(loc = 'lower right')
+
+plt.plot([0, 1], [0, 1],'r--')
+
+plt.xlim([0, 1])
+
+plt.ylim([0, 1])
+
+plt.ylabel('True Positive Rate')
+
+plt.xlabel('False Positive Rate')
+
+plt.show()  
+
